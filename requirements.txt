@@ -1,0 +1,4 @@
+plotly
+numpy
+matplotlib
+pytest
