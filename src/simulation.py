@@ -1,23 +1,9 @@
 from dataclasses import dataclass
 import numpy as np
+from cachetools.func import lru_cache
 
-START_YEAR = 2021
-HORIZON = 2100
-
-CO2_RELATIVE_GWP = 1
-METHANE_RELATIVE_GWP = (
-    45  # https://www.realclimate.org/index.php/archives/2021/09/the-definitive-co2-ch4-comparison-post/
-)
-
-
-CO2_HALFLIFE_YEARS = 120
-METHANE_HALFLIFE_YEARS = 10.5  # https://meteor.geol.iastate.edu/gccourse/forcing/lifetimes.html
-
-CO2_CONC = 410
-METHANE_CONC = 1.87  # https://www.realclimate.org/index.php/archives/2021/09/the-definitive-co2-ch4-comparison-post/
-
-CO2_EMISSIONS_PA_MT = 36.44e3  # https://ourworldindata.org/co2-emissions
-METHANE_EMISSIONS_PA_MT = 570  # https://www.iea.org/reports/methane-tracker-2020
+from src.constants import START_YEAR, HORIZON, CO2_RELATIVE_GWP, METHANE_RELATIVE_GWP, CO2_HALFLIFE_YEARS, \
+    METHANE_HALFLIFE_YEARS, CO2_EMISSIONS_PA_MT, METHANE_EMISSIONS_PA_MT
 
 
 @dataclass
@@ -53,12 +39,21 @@ class Simulation:
             + [0] * (end_year - (peak_year + years_to_zero))
         )
 
-    def simulate_concentrations(self, end_year: int):
-        """
-        Simulate concentrations of methane and CO2 out until `year`
+    @classmethod
+    def simulate_concentrations(cls, emissions: list, half_life: float):
+        # Each year contributes an exponentially decaying curve
 
-        We assume current emissions constant until the reduction year then instantaneous stop
-        """
+        contributions = np.zeros((len(emissions), len(emissions)))
+
+        for year, emissions in enumerate(emissions):
+            curve = emissions * cls._exponential_curve(half_life)
+            truncated = curve[0 : (len(curve) - year)]
+            contributions[year, year : len(curve)] = truncated
+
+        # Sum across those curves to obtain total concentrations
+        total_concentrations = contributions.sum(axis=0)
+
+        return total_concentrations
 
     def total_radiative_forcing(self, methane_conc: float, co2_conc: float):
 
@@ -66,3 +61,8 @@ class Simulation:
 
     def total_warming(self):
         ...
+
+    @classmethod
+    @lru_cache
+    def _exponential_curve(cls, half_life: float):
+        return np.array([1 * 2 ** (-t / half_life) for t in range(HORIZON - START_YEAR)])
