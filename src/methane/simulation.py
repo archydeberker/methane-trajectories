@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 import numpy as np
-from cachetools.func import lru_cache
+from functools import lru_cache
 
-from src.constants import START_YEAR, HORIZON, CO2_RELATIVE_GWP, METHANE_RELATIVE_GWP, CO2_HALFLIFE_YEARS, \
+from methane.constants import START_YEAR, HORIZON, CO2_RELATIVE_GWP, METHANE_RELATIVE_GWP, CO2_HALFLIFE_YEARS, \
     METHANE_HALFLIFE_YEARS, CO2_EMISSIONS_PA_MT, METHANE_EMISSIONS_PA_MT
 
 
@@ -42,7 +42,6 @@ class Simulation:
     @classmethod
     def simulate_concentrations(cls, emissions: list, half_life: float):
         # Each year contributes an exponentially decaying curve
-
         contributions = np.zeros((len(emissions), len(emissions)))
 
         for year, emissions in enumerate(emissions):
