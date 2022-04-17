@@ -1,8 +1,8 @@
 import plotly.express as px
 
 import matplotlib.pyplot as plt
-from src.simulation import Simulation
-from src import constants
+from methane.simulation import Simulation
+from methane import constants
 
 
 def test_emissions_simulation():
